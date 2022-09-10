@@ -85,3 +85,10 @@ pub trait Signer: std::fmt::Debug + Send + Sync {
     #[must_use]
     fn with_chain_id<T: Into<u64>>(self, chain_id: T) -> Self;
 }
+
+pub trait Tron {
+    /// Returns the signer's Tron Address (Hex format)
+    fn to_tron_hex_address(&self) -> String;
+    /// Returns the signer's Tron Address (base58 format)
+    fn to_tron_b58_address(&self) -> String;
+}

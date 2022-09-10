@@ -9,9 +9,7 @@ pub use private_key::WalletError;
 #[cfg(feature = "yubihsm")]
 mod yubi;
 
-mod tron;
-
-use crate::{to_eip155_v, Signer};
+use crate::{to_eip155_v, Signer, Tron};
 use ethers_core::{
     k256::{
         ecdsa::{recoverable::Signature as RecoverableSignature, signature::DigestSigner},
@@ -28,7 +26,6 @@ use hash::Sha256Proxy;
 
 use async_trait::async_trait;
 use std::fmt;
-use crate::wallet::tron::Tron;
 use base58::ToBase58;
 use sha2::{Sha256, Digest};
 
@@ -211,8 +208,7 @@ impl<D: DigestSigner<Sha256Proxy, RecoverableSignature>> Tron for Wallet<D> {
 
 mod test{
     use std::str::FromStr;
-    use crate::LocalWallet;
-    use crate::wallet::tron::Tron;
+    use crate::{LocalWallet, Tron};
 
     #[test]
     fn tron_test() {
