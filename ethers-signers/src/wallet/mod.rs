@@ -9,6 +9,8 @@ pub use private_key::WalletError;
 #[cfg(feature = "yubihsm")]
 mod yubi;
 
+mod tron;
+
 use crate::{to_eip155_v, Signer};
 use ethers_core::{
     k256::{
@@ -26,6 +28,9 @@ use hash::Sha256Proxy;
 
 use async_trait::async_trait;
 use std::fmt;
+use crate::wallet::tron::Tron;
+use base58::ToBase58;
+use sha2::{Sha256, Digest};
 
 /// An Ethereum private-public key pair which can be used for signing messages.
 ///
@@ -177,4 +182,50 @@ impl<D: DigestSigner<Sha256Proxy, RecoverableSignature>> fmt::Debug for Wallet<D
             .field("chain_Id", &self.chain_id)
             .finish()
     }
+}
+
+impl<D: DigestSigner<Sha256Proxy, RecoverableSignature>> Tron for Wallet<D> {
+    fn to_tron_hex_address(&self) -> String {
+        let mut raw = [0x41; 21];
+        raw[1..21].copy_from_slice(self.address.as_ref());
+        hex::encode(raw)
+    }
+
+    fn to_tron_b58_address(&self) -> String {
+        let mut raw = [0x41; 21];
+        raw[1..21].copy_from_slice(self.address.as_ref());
+        let mut hasher = Sha256::new();
+        hasher.update(raw.as_ref());
+        let digest1 = hasher.finalize();
+
+        let mut hasher = Sha256::new();
+        hasher.update(&digest1);
+        let digest = hasher.finalize();
+
+        let mut res = Vec::new();
+        res.extend_from_slice(&raw);
+        res.extend_from_slice(&digest[..4]);
+        res.as_slice().to_base58()
+    }
+}
+
+mod test{
+    use std::str::FromStr;
+    use crate::LocalWallet;
+    use crate::wallet::tron::Tron;
+
+    #[test]
+    fn tron_test() {
+        let private_key = "427139B43028A492E2705BCC9C64172392B8DB59F3BA1AEDAE41C88924960091";
+        let wallet = LocalWallet::from_str(private_key).unwrap();
+        assert_eq!(
+            "412A2B9F7641D0750C1E822D0E49EF765C8106524B",
+            wallet.to_tron_hex_address().to_uppercase().as_str()
+        );
+        assert_eq!(
+            "TDpBe64DqirkKWj6HWuR1pWgmnhw2wDacE",
+            wallet.to_tron_b58_address().as_str()
+        );
+    }
+
 }
